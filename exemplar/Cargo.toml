@@ -1,10 +1,14 @@
 [package]
 name = "exemplar"
-version = "0.1.0"
-edition = "2021"
+description = "A boilerplate eliminator for rusqlite."
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
 
 [dependencies]
-exemplar_derive = { version = "0.1.0", path = "../exemplar_derive" }
+exemplar_proc_macro = "0.0.0"
 rusqlite = "0.29.0"

@@ -33,15 +33,27 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "exemplar"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
- "exemplar_derive",
+ "exemplar_proc_macro 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusqlite",
 ]
 
 [[package]]
-name = "exemplar_derive"
-version = "0.1.0"
+name = "exemplar_proc_macro"
+version = "0.0.0"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
+]
+
+[[package]]
+name = "exemplar_proc_macro"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5053c493f74cd021d0e4b770d9ca6b9c487ce281ab8d2bd38c254f127ff8290"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",

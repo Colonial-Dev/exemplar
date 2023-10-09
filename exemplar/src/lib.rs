@@ -10,8 +10,8 @@ use rusqlite::types::{
     FromSqlResult
 };
 
-/// Derive macro for implementing the [`Model`] trait.
-pub use exemplar_derive::Model;
+/// Derive macro for the [`Model`] trait.
+pub use exemplar_proc_macro::Model;
 
 pub type BindResult<'a> = Result<ToSqlOutput<'a>>;
 pub type ExtrResult<T> = FromSqlResult<T>;

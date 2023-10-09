@@ -1,8 +1,15 @@
 [workspace]
-
 resolver = "2"
 
 members = [
     "exemplar",
-    "exemplar_derive",
+    "exemplar_proc_macro",
 ]
+
+[workspace.package]
+version = "0.0.0"
+authors = ["Colonial"]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Colonial-Dev/exemplar/"
+keywords = ["sqlite", "rusqlite", "database", "orm"]
