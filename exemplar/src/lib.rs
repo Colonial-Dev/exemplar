@@ -24,6 +24,8 @@
 //! 
 //! - See the aformentioned [macro](crate::macros::Model)'s documentation to get started.
 //! - For handling `enum`s in models, check out the [`sql_enum`] macro.
+//! - For working with "anonymous" record types, look at the [`record`] macro.
+//! 
 //! # Cargo Features
 //! - (Default) `sql_enum` - enables the [`sql_enum`] macro. Depends on `num_enum`.
 
@@ -144,8 +146,19 @@ pub trait Model {
     /// # Performance
     /// This method allocates at least once, in order to [`Box`] the returned slice.
     /// 
-    /// If the implementing type has any fields annotated with `#[bind]/#[extr]`, an additional boxing will be incurred for each field.
+    /// If the implementing type has any fields annotated with `#[bind]`/`#[extr]`, an additional boxing will be incurred for each annotated field.
     fn as_params(&self) -> Result<Parameters>;
+    
+    /// Retrieve [`ModelMeta`] (model metadata) associated with the implementing type.
+    /// 
+    /// This method is object-safe, making it callable on a [`dyn Model`](Model). 
+    /// If (for whatever reason) you find yourself needing to dynamically reflect on [`Model`] properties, then this is for you.
+    /// 
+    /// # Performance
+    /// [`ModelMeta`] is composed entirely of `&'static`/known-at-comptime data, making it little more than a bundle of trivially-copyable `usize`s.
+    /// 
+    /// The only overhead on this call is therefore dynamic dispatch and several shallow copies.
+    fn metadata(&self) -> ModelMeta;
 }
 
 /// Possible conflict resolution strategies when using [`Model::insert_or`].
@@ -217,4 +230,19 @@ impl<'a> Deref for Parameter<'a> {
             Self::Boxed(param) => param,
         }
     }
+}
+
+/// Metadata about a [`Model`] implementor.
+/// 
+/// Can be retrieved via the [`Model::metadata`] method.
+#[derive(Debug, Clone)]
+pub struct ModelMeta {
+    /// The name of the model type.
+    pub model: &'static str,
+    /// The name of the model table.
+    pub table: &'static str,
+    /// The field names of the model type.
+    pub fields: &'static [&'static str],
+    /// The columns of the model table.
+    pub columns: &'static [&'static str],
 }

@@ -140,6 +140,45 @@ pub fn as_params(derivee: &Derivee) -> QuoteStream {
     }
 }
 
+pub fn metadata(derivee: &Derivee) -> QuoteStream {
+    let model = &derivee.name;
+    let table = &derivee.table;
+    
+    let field_names = derivee
+        .fields
+        .iter()
+        .map(|field| {
+            field
+                .ident
+                .as_ref()
+                .expect("All fields should have an identifier.")
+                .to_string()
+        });
+    
+    let columns = derivee.col_names();
+    
+    quote! {
+        fn metadata(&self) -> ::exemplar::ModelMeta {
+            use ::exemplar::ModelMeta;
+
+            static FIELDS: &'static [&'static str] = &[
+                #(#field_names),*
+            ];
+
+            static COLUMNS: &'static [&'static str] = &[
+                #(#columns),*
+            ];
+
+            ModelMeta {
+                model: stringify!(#model),
+                table: #table,
+                fields: FIELDS,
+                columns: COLUMNS,
+            }
+        }
+    }
+}
+
 pub fn check_test(derivee: &Derivee) -> QuoteStream {
     let Some(path) = &derivee.schema else {
         return QuoteStream::new()

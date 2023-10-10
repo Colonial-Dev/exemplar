@@ -27,6 +27,13 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
 
     let name = &ast.ident;
 
+    if ast.generics.lt_token.is_some() {
+        abort_call_site!(
+            "Model can only be derived for concrete types.";
+            note = "Generics and lifetime parameters are not currently supported.";
+        )
+    }
+
     let Data::Struct(data) = &ast.data else {
         abort_call_site!(
             "Model can only be derived for struct types.";
@@ -67,6 +74,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
     let from_row            = codegen::from_row(&derivee);
     let (insert, insert_or) = codegen::inserts(&derivee);
     let as_params           = codegen::as_params(&derivee);
+    let metadata            = codegen::metadata(&derivee);
     let check_test          = codegen::check_test(&derivee);
     
     quote! {
@@ -76,6 +84,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             #insert
             #insert_or
             #as_params
+            #metadata
         }
 
         #[automatically_derived]

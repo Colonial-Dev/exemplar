@@ -19,7 +19,7 @@ default = ["sql_enum"]
 sql_enum = ["dep:num_enum"]
 
 [dependencies]
-exemplar_proc_macro = "0.5.0"
+exemplar_proc_macro = "0.5.2"
 rusqlite = "0.29.0"
 
 num_enum = { version = "0.7.0", optional = true}

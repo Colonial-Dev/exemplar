@@ -55,6 +55,22 @@ fn test_person() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_person_metadata() {
+    let alice = Person {
+        name: "Alice".to_owned(),
+        age: 21,
+        alive: true
+    };
+
+    let meta = alice.metadata(); 
+
+    assert_eq!(meta.model, "Person");
+    assert_eq!(meta.table, "people");
+    assert_eq!(meta.fields, &["name", "age", "alive"]);
+    assert_eq!(meta.columns, &["name", "age", "alive"]);
+}
+
 // Complicated case
 #[derive(Debug, PartialEq, Eq, Model)]
 #[table("users")]
@@ -120,4 +136,20 @@ fn test_user() -> Result<()> {
     assert_eq!(bob, iter.next().unwrap()?);
 
     Ok(())
+}
+
+#[test]
+fn test_user_metadata() {
+    let alice = User {
+        username: "Alice".to_owned(),
+        home_dir: "/var/home/alice".into(),
+        password: b"hunter2".as_slice().into(),
+    };
+
+    let meta = alice.metadata(); 
+
+    assert_eq!(meta.model, "User");
+    assert_eq!(meta.table, "users");
+    assert_eq!(meta.fields, &["username", "home_dir", "password"]);
+    assert_eq!(meta.columns, &["username", "home_dir", "pwd"]);
 }
