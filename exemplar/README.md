@@ -4,9 +4,31 @@
 <p align="center">
 <img src="https://img.shields.io/crates/v/exemplar">
 <img src="https://img.shields.io/github/actions/workflow/status/Colonial-Dev/exemplar/rust.yml">
-<img src="https://img.shields.io/docsrs/exemplar" href="https://docs.rs/exemplar">
+<img src="https://img.shields.io/docsrs/exemplar">
 <img src="https://img.shields.io/crates/l/exemplar">
 </p>
+
+## Getting Started
+A taste of what you can do:
+```rs
+#[derive(Model)]
+#[table("users")]
+#[check("schema.sql")]
+struct User {
+   username: String,
+   #[bind(bind_path)]
+   #[extr(extr_path)]
+   home_dir: PathBuf,
+   #[column("pwd")]
+   password: Vec<u8>,
+}
+```
+
+Exemplar is based around the [`Model`](https://docs.rs/exemplar/latest/exemplar/trait.Model.html) trait, which has its own [derive macro](https://docs.rs/exemplar/latest/exemplar/derive.Model.html).
+
+- See the aformentioned [macro](https://docs.rs/exemplar/latest/exemplar/derive.Model.html)'s documentation to get started.
+- For handling `enum`s in models, check out the [`sql_enum`](https://docs.rs/exemplar/latest/exemplar/macro.sql_enum.html) macro.
+- For working with "anonymous" record types, look at the [`record`](https://docs.rs/exemplar/latest/exemplar/macro.record.html) macro.
 
 ## Features
 - Works with raw SQL, not against it. Exemplar is *not* an ORM.
