@@ -118,14 +118,14 @@ pub use exemplar_proc_macro::Model;
 /// record! {
 ///     // The provided field name is assumed to map directly to a column in a query's output.
 ///     name => String,
-///     age  => u16
+///     age  => u16,
 /// }
 /// 
 /// record! {
 ///     // By default, the generated struct is called `Record.`
 ///     // This can be overridden with the `Name` parameter, should the need arise.
 ///     Name => Age,
-///     age  => u16
+///     age  => u16,
 /// }
 /// 
 /// let mut get_people = conn.prepare("SELECT name, age FROM people")?;
@@ -141,7 +141,7 @@ pub use exemplar_proc_macro::Model;
 /// ```
 #[macro_export]
 macro_rules! record {
-    (Name => $name:ident, $($fname:ident => $ftype:ty),*) => {
+    (Name => $name:ident, $($fname:ident => $ftype:ty),* $(,)?) => {
         #[derive(Debug, Clone)]
         /// Automatically generated record type for storing query results.
         pub struct $name {
@@ -164,7 +164,7 @@ macro_rules! record {
             }
         }
     };
-    ($($fname:ident => $ftype:ty),*) => {
+    ($($fname:ident => $ftype:ty),* $(,)?) => {
         record!(Name => Record, $($fname => $ftype),*);
     };
 }
@@ -187,17 +187,45 @@ macro_rules! record {
 ///     Name => Color,
 ///     Red,
 ///     Green,
-///     Blue
+///     Blue,
 /// };
 /// ```
-#[cfg(feature = "sql_enum")]
+/// 
+/// # Notes
+/// Explicit discriminants are *not* supported. This means that:
+/// ```ignore
+/// sql_enum! {
+///     Name => Color,
+///     Red = 1,
+///     ...
+/// }
+/// ```
+/// ...will not compile.
+///
+/// Discriminants will be implicitly numbered, in order of definition, from zero.
+/// <hr>
+/// 
+/// Doc comments *are* supported:
+/// ```rust
+/// # use exemplar::sql_enum;
+/// sql_enum! {
+///     /// An RGB color tag.
+///     Name => Color,
+///     /// Red
+///     Red,
+///     /// Green
+///     Green,
+///     /// Blue
+///     Blue,
+/// }
+/// ```
 #[macro_export]
 macro_rules! sql_enum {
-    ($(#[$enum_doc:meta])* Name => $name:ident, $($(#[$variant_doc:meta])* $vname:ident),*) => {
+    ($(#[$enum_doc:meta])* Name => $name:ident, $($(#[$variant_doc:meta])* $vname:ident),* $(,)?) => {
         $(#[$enum_doc])*
         #[repr(i64)]
         #[automatically_derived]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, ::exemplar::TryFromPrimitive)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
         pub enum $name {
             $($(#[$variant_doc])* $vname),*
         }
@@ -219,6 +247,33 @@ macro_rules! sql_enum {
                     .map_err(|err| {
                         ::rusqlite::types::FromSqlError::Other(Box::new(err))
                     })
+            }
+        }
+
+        #[automatically_derived]
+        #[allow(unsafe_code)]
+        impl ::std::convert::TryFrom<i64> for $name {
+            type Error = ::rusqlite::types::FromSqlError;
+
+            fn try_from(value: i64) -> Result<Self, Self::Error> {
+                let len = [$(Self::$vname),*].len() as i64;
+
+                if value < len {
+		    // Safety: the sql_enum macro does not support explicit discriminants,
+		    // so we know that the enum must be represented by the range 0..len
+                    let variant = unsafe { ::std::mem::transmute(value) };
+                    Ok(variant)
+                }
+                else {
+                    let msg = format!(
+                        "No discriminant in enum `{}` matches the value `{value}`",
+                        stringify!($name)
+                    );
+
+                    Err(::rusqlite::types::FromSqlError::Other(
+                        msg.into()
+                    ))
+                }
             }
         }
     };

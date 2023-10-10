@@ -25,9 +25,6 @@
 //! - See the aformentioned [macro](crate::macros::Model)'s documentation to get started.
 //! - For handling `enum`s in models, check out the [`sql_enum`] macro.
 //! - For working with "anonymous" record types, look at the [`record`] macro.
-//! 
-//! # Cargo Features
-//! - (Default) `sql_enum` - enables the [`sql_enum`] macro. Depends on `num_enum`.
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
@@ -46,10 +43,6 @@ use rusqlite::types::{
 };
 
 pub use crate::macros::*;
-
-// Exported but hidden to allow the `sql_enum` macro to work.
-#[doc(hidden)]
-pub use num_enum::TryFromPrimitive;
 
 /// Type alias for the outcome of converting a value to an SQL-friendly representation.
 /// 

@@ -1,5 +1,3 @@
-// TODO properly document this crate
-
 mod codegen;
 mod util;
 

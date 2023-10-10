@@ -6,7 +6,7 @@ use exemplar::Model;
 sql_enum!(
     Name => Gender,
     Male,
-    Female
+    Female,
 );
 
 #[derive(Model, Debug, PartialEq, Eq)]

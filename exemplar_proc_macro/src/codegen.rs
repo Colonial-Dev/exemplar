@@ -8,6 +8,7 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
         .fields
         .iter()
         .zip(col_names)
+        // Handle #[extr]/no #[extr]
         .map(|(field, name)| {
             let ty = &field.ty;
 
@@ -43,6 +44,7 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     let field_idents = derivee
         .field_idents()
         .zip(&derivee.fields)
+        // Handle #[bind]/no #[bind]
         .map(|(ident, field)| {
             if let Some(bind) = util::get_bind_path(field) {
                 quote! { &#bind(&self.#ident)? }
@@ -116,9 +118,11 @@ pub fn as_params(derivee: &Derivee) -> QuoteStream {
         .zip(&derivee.fields)
         .map(|(ident, field)| {
             if let Some(bind) = util::get_bind_path(field) {
+                // If the field has a #[bind] attribute, then we execute it now and box the result.
                 quote! { Boxed(Box::new(#bind(&self.#ident)?) as Box<dyn ::rusqlite::ToSql>) }
             }
             else {
+                // Otherwise, we're good to just borrow directly from self and cast to a dyn ToSql.
                 quote! { Borrowed(&self.#ident as &dyn ::rusqlite::ToSql) }
             }
         });

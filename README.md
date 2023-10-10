@@ -20,9 +20,6 @@
 
 If you just need to CRUD some Rust data with `sqlite` and don't want a whole ORM or enterprise-grade DBMS, then Exemplar is for you!
 
-## Cargo Features
-- (Default) `sql_enum` - enables the `sql_enum` macro. Depends on `num_enum`.
-
 ## Won't Support
 - Schema generation and management. It's very difficult to represent concepts like foreign keys and migrations without falling into ORM territory.
   - If this is a "must" for you, check out `diesel` or `sqlx`/`seaorm`.

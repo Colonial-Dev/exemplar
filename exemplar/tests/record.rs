@@ -5,12 +5,12 @@ use exemplar::record;
 
 record! {
     name => String,
-    age  => u16
+    age  => u16,
 }
 
 record! {
     Name => Age,
-    age  => u16
+    age  => u16,
 }
 
 #[derive(Debug, PartialEq, Eq, Model)]

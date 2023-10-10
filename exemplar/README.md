@@ -16,11 +16,9 @@
   - Supports any type that `Deref`'s to `rusqlite::Connection`, such as transactions or pooled connections.
 - Optional test derivation for guarding against drift between your database schema and Rust model types.
 - Macros for working with SQL-compatible `enum`s and "anonymous" record types that map to ad-hoc queries.
+- Some ability to reflect on/work with `dyn Model`s at runtime.
 
 If you just need to CRUD some Rust data with `sqlite` and don't want a whole ORM or enterprise-grade DBMS, then Exemplar is for you!
-
-## Cargo Features
-- (Default) `sql_enum` - enables the `sql_enum` macro. Depends on `num_enum`.
 
 ## Won't Support
 - Schema generation and management. It's very difficult to represent concepts like foreign keys and migrations without falling into ORM territory.
