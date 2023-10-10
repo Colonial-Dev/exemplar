@@ -62,20 +62,14 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     
     let insert = quote! {
         #[inline]
-        fn insert(&self, conn: &::rusqlite::Connection) -> ::rusqlite::Result<()>
-        where
-            Self: ::std::marker::Sized
-        {
+        fn insert(&self, conn: &::rusqlite::Connection) -> ::rusqlite::Result<()> {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
         }
     };
 
     let insert_or = quote! {
         #[inline]
-        fn insert_or(&self, conn: &::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
-        where
-            Self: ::std::marker::Sized
-        {
+        fn insert_or(&self, conn: &::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()> {
             use ::exemplar::OnConflict::*;
             
             let exec = |sql: &str| -> ::rusqlite::Result<()> {

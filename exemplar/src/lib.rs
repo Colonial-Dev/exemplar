@@ -25,9 +25,6 @@
 //! - See the aformentioned [macro](crate::macros::Model)'s documentation to get started.
 //! - For handling `enum`s in models, check out the [`sql_enum`] macro.
 //! - For working with "anonymous" record types, look at the [`record`] macro.
-//! 
-//! # Cargo Features
-//! - (Optional) `r2d2` - enable integration with `r2d2`/`r2d2_sqlite`'s pooled connection type.
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
@@ -119,18 +116,14 @@ pub trait Model {
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert(&self, conn: &::rusqlite::Connection) -> Result<()>
-    where
-        Self: Sized;
+    fn insert(&self, conn: &::rusqlite::Connection) -> Result<()>;
     
     /// Attempt to insert `self` into the database behind the provided connection, using the provided [conflict resolution strategy](OnConflict).
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>
-    where
-        Self: Sized;
+    fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>;
     
     /// Generate a slice of named [`Parameters`] from an instance of `self`.
     /// 
@@ -141,7 +134,12 @@ pub trait Model {
     /// 
     /// If the implementing type has any fields annotated with `#[bind]`/`#[extr]`, an additional boxing will be incurred for each annotated field.
     fn as_params(&self) -> Result<Parameters>;
-    
+
+    /// Static dispatch version of [`Model::metadata_dyn`].
+    fn metadata() -> ModelMeta
+    where
+        Self: Sized;
+
     /// Retrieve [`ModelMeta`] (model metadata) associated with the implementing type.
     /// 
     /// This method is object-safe, making it callable on a [`dyn Model`](Model). 
@@ -152,12 +150,11 @@ pub trait Model {
     /// 
     /// The only overhead on this call is therefore dynamic dispatch and several shallow copies.
     fn metadata_dyn(&self) -> ModelMeta;
-
-    /// Static dispatch version of [`Model::metadata_dyn`].
-    fn metadata() -> ModelMeta
-    where
-        Self: Sized;
 }
+
+trait Foo {}
+
+impl<T: Model> Foo for T {}
 
 /// Possible conflict resolution strategies when using [`Model::insert_or`].
 /// 
