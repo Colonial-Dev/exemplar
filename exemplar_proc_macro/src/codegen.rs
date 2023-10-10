@@ -21,7 +21,10 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
 
     quote! {
         #[inline]
-        fn from_row(row: &::rusqlite::Row) -> ::rusqlite::Result<Self> {
+        fn from_row(row: &::rusqlite::Row) -> ::rusqlite::Result<Self> 
+        where
+            Self: ::std::marker::Sized,
+        {
             Ok(Self {
                 #(#field_idents : #getters),*
             })
@@ -59,6 +62,7 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
         #[inline]
         fn insert<C>(&self, conn: C) -> ::rusqlite::Result<()>
         where
+            Self: ::std::marker::Sized,
             C: ::std::ops::Deref<Target = ::rusqlite::Connection>
         {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
@@ -69,6 +73,7 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
         #[inline]
         fn insert_or<C>(&self, conn: C, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
         where
+            Self: ::std::marker::Sized,
             C: ::std::ops::Deref<Target = ::rusqlite::Connection>
         {
             use ::exemplar::OnConflict::*;
