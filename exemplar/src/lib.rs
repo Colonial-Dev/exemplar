@@ -25,6 +25,9 @@
 //! - See the aformentioned [macro](crate::macros::Model)'s documentation to get started.
 //! - For handling `enum`s in models, check out the [`sql_enum`] macro.
 //! - For working with "anonymous" record types, look at the [`record`] macro.
+//! 
+//! # Cargo Features
+//! - (Optional) `r2d2` - enable integration with `r2d2`/`r2d2_sqlite`'s pooled connection type.
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
@@ -36,6 +39,7 @@ use rusqlite::Connection;
 use rusqlite::Result;
 use rusqlite::Row;
 use rusqlite::ToSql;
+use rusqlite::Transaction;
 
 use rusqlite::types::{
     ToSqlOutput,
@@ -117,20 +121,20 @@ pub trait Model {
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert<C>(&self, conn: C) -> Result<()>
+    fn insert<C>(&self, conn: &C) -> Result<()>
     where
         Self: Sized,
-        C: Deref<Target = Connection>;
+        C: Connector;
 
     /// Attempt to insert `self` into the database behind the provided connection, using the provided [conflict resolution strategy](OnConflict).
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert_or<C>(&self, conn: C, strategy: OnConflict) -> Result<()>
+    fn insert_or<C>(&self, conn: &C, strategy: OnConflict) -> Result<()>
     where
         Self: Sized,
-        C: Deref<Target = Connection>;
+        C: Connector;
     
     /// Generate a slice of named [`Parameters`] from an instance of `self`.
     /// 
@@ -151,7 +155,45 @@ pub trait Model {
     /// [`ModelMeta`] is composed entirely of `&'static`/known-at-comptime data, making it little more than a bundle of trivially-copyable `usize`s.
     /// 
     /// The only overhead on this call is therefore dynamic dispatch and several shallow copies.
-    fn metadata(&self) -> ModelMeta;
+    fn metadata_dyn(&self) -> ModelMeta;
+
+    /// Static dispatch version of [`Model::metadata_dyn`].
+    fn metadata() -> ModelMeta
+    where
+        Self: Sized;
+}
+
+/// Trait for abstracting over possible connection types.
+/// 
+/// This trait is implemented for [`Connection`] and [`Transaction`](rusqlite::Transaction)
+pub trait Connector {
+    fn get(&self) -> &Connection;
+}
+
+impl Connector for Connection {
+    #[inline(always)]
+    fn get(&self) -> &Connection {
+        self
+    }
+}
+
+impl Connector for Transaction<'_> {
+    #[inline(always)]
+    fn get(&self) -> &Connection {
+        self
+    }
+}
+
+#[cfg(feature = "r2d2")]
+use r2d2::PooledConnection;
+#[cfg(feature = "r2d2")]
+use r2d2_sqlite::SqliteConnectionManager as Sqlite;
+#[cfg(feature = "r2d2")]
+impl Connector for PooledConnection<Sqlite> {
+    #[inline(always)]
+    fn get(&self) -> &Connection {
+        self.deref()
+    }
 }
 
 /// Possible conflict resolution strategies when using [`Model::insert_or`].
@@ -228,7 +270,7 @@ impl<'a> Deref for Parameter<'a> {
 /// Metadata about a [`Model`] implementor.
 /// 
 /// Can be retrieved via the [`Model::metadata`] method.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModelMeta {
     /// The name of the model type.
     pub model: &'static str,

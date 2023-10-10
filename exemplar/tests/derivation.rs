@@ -23,12 +23,14 @@ struct Person {
 fn test_person() -> Result<()> {
     use rusqlite::Connection;
 
-    let conn = Connection::open_in_memory()
+    let mut conn = Connection::open_in_memory()
         .unwrap();
 
     conn.execute_batch("
         CREATE TABLE people (name, age, alive);
     ")?;
+
+    let txn = conn.transaction()?;
 
     let alice = Person {
         name: "Alice".to_owned(),
@@ -42,15 +44,19 @@ fn test_person() -> Result<()> {
         alive: false
     };
 
-    alice.insert(&conn)?;
-    bob.insert(&conn)?;
+    alice.insert(&txn)?;
+    bob.insert(&txn)?;
 
-    let mut stmt = conn.prepare("SELECT * FROM people ORDER BY name ASC")?;
+    let mut stmt = txn.prepare("SELECT * FROM people ORDER BY name ASC")?;
 
     let mut iter = stmt.query_and_then([], Person::from_row)?;
 
     assert_eq!(alice, iter.next().unwrap()?);
     assert_eq!(bob, iter.next().unwrap()?);
+
+    drop(iter);
+    drop(stmt);
+    txn.commit()?;
 
     Ok(())
 }
@@ -63,7 +69,7 @@ fn test_person_metadata() {
         alive: true
     };
 
-    let meta = alice.metadata(); 
+    let meta = alice.metadata_dyn(); 
 
     assert_eq!(meta.model, "Person");
     assert_eq!(meta.table, "people");
@@ -146,7 +152,7 @@ fn test_user_metadata() {
         password: b"hunter2".as_slice().into(),
     };
 
-    let meta = alice.metadata(); 
+    let meta = alice.metadata_dyn(); 
 
     assert_eq!(meta.model, "User");
     assert_eq!(meta.table, "users");

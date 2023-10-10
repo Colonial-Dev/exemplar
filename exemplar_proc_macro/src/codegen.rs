@@ -62,10 +62,10 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     
     let insert = quote! {
         #[inline]
-        fn insert<C>(&self, conn: C) -> ::rusqlite::Result<()>
+        fn insert<C>(&self, conn: &C) -> ::rusqlite::Result<()>
         where
             Self: ::std::marker::Sized,
-            C: ::std::ops::Deref<Target = ::rusqlite::Connection>
+            C: ::exemplar::Connector
         {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
         }
@@ -73,15 +73,15 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
 
     let insert_or = quote! {
         #[inline]
-        fn insert_or<C>(&self, conn: C, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
+        fn insert_or<C>(&self, conn: &C, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
         where
             Self: ::std::marker::Sized,
-            C: ::std::ops::Deref<Target = ::rusqlite::Connection>
+            C: ::exemplar::Connector
         {
             use ::exemplar::OnConflict::*;
             
             let exec = |sql: &str| -> ::rusqlite::Result<()> {
-                let mut stmt = conn.prepare_cached(sql)?;
+                let mut stmt = conn.get().prepare_cached(sql)?;
                 
                 let params = [
                     #((#col_names, #field_idents as &dyn ::rusqlite::ToSql)),*
@@ -162,7 +162,14 @@ pub fn metadata(derivee: &Derivee) -> QuoteStream {
     let columns = derivee.col_names();
     
     quote! {
-        fn metadata(&self) -> ::exemplar::ModelMeta {
+        fn metadata_dyn(&self) -> ::exemplar::ModelMeta {
+            Self::metadata()
+        }
+        
+        fn metadata() -> ::exemplar::ModelMeta
+        where
+            Self: ::std::marker::Sized
+        {
             use ::exemplar::ModelMeta;
 
             static FIELDS: &'static [&'static str] = &[
