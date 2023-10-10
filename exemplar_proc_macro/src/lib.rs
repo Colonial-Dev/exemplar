@@ -45,6 +45,13 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
         .iter()
         .collect();
 
+    if fields.is_empty() {
+        abort_call_site!(
+            "Model can only be derived for structs with named fields.";
+            note = "Tuple and unit structs are not supported.";
+        )
+    }
+
     let table = util::get_table_name(&ast);
     let schema = util::get_check_path(&ast);
 

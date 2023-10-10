@@ -20,6 +20,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
+name = "anyhow"
+version = "1.0.75"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
+
+[[package]]
 name = "bitflags"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -35,25 +41,14 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "exemplar"
 version = "0.0.0"
 dependencies = [
- "exemplar_proc_macro 0.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "anyhow",
+ "exemplar_proc_macro",
  "rusqlite",
 ]
 
 [[package]]
 name = "exemplar_proc_macro"
 version = "0.0.0"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 2.0.38",
-]
-
-[[package]]
-name = "exemplar_proc_macro"
-version = "0.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5053c493f74cd021d0e4b770d9ca6b9c487ce281ab8d2bd38c254f127ff8290"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",

@@ -12,7 +12,7 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
             let ty = &field.ty;
 
             if let Some(extr) = util::get_extr_path(field) {
-                quote! { #extr(row.get_ref(#name)?)? }
+                quote! { #extr(&row.get_ref(#name)?)? }
             }
             else {
                 quote! { row.get::<_, #ty>(#name)? }
@@ -106,16 +106,31 @@ pub fn as_params(derivee: &Derivee) -> QuoteStream {
             Literal::string(&str)
         });
 
-    let field_idents = derivee.field_idents();
-
+    let field_idents = derivee
+        .field_idents()
+        .zip(&derivee.fields)
+        .map(|(ident, field)| {
+            if let Some(bind) = util::get_bind_path(field) {
+                quote! { Boxed(Box::new(#bind(&self.#ident)?) as Box<dyn ::rusqlite::ToSql>) }
+            }
+            else {
+                quote! { Borrowed(&self.#ident as &dyn ::rusqlite::ToSql) }
+            }
+        });
+    
     quote! {
         #[inline]
-        fn as_params(&self) -> ::std::boxed::Box<[(&str, &dyn ::rusqlite::ToSql)]> {
+        fn as_params(&self) -> ::rusqlite::Result<::exemplar::Parameters> {
+            use ::std::boxed::Box;
+            use ::exemplar::Parameter::*;
+
             let params = [
-                #((#col_names, &self.#field_idents as &dyn ::rusqlite::ToSql)),*
+                #((#col_names, #field_idents)),*
             ];
 
-            ::std::boxed::Box::new(params)
+            Ok(
+                Box::new(params)
+            )
         }
     }
 }
@@ -134,7 +149,7 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
     quote! {
         // Hack to prevent clippy::items_after_test_module from firing
         #[cfg(not(not(test)))]
-        #[allow(clippy::items_after_test_module)]
+        #[automatically_derived]
         mod #module {
             use ::rusqlite::Connection;
 

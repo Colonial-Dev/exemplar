@@ -10,5 +10,8 @@ repository.workspace = true
 keywords.workspace = true
 
 [dependencies]
-exemplar_proc_macro = "0.0.0"
+exemplar_proc_macro = {version = "0.0.0", path = "../exemplar_proc_macro"}
 rusqlite = "0.29.0"
+
+[dev-dependencies]
+anyhow = "1.0.75"

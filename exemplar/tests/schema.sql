@@ -1,1 +1,1 @@
-CREATE TABLE foo (bar, qux);
+CREATE TABLE users (username, home_dir, pwd);

@@ -13,8 +13,9 @@ use rusqlite::types::{
 /// Derive macro for the [`Model`] trait.
 pub use exemplar_proc_macro::Model;
 
-pub type BindResult<'a> = Result<ToSqlOutput<'a>>;
+pub type BindResult = Result<ToSqlOutput<'static>>;
 pub type ExtrResult<T> = FromSqlResult<T>;
+pub type Parameters<'a> = Box<[(&'a str, Parameter<'a>)]>;
 
 pub trait Model : Sized {
     fn from_row(row: &Row) -> Result<Self>;
@@ -27,7 +28,7 @@ pub trait Model : Sized {
     where
         C: Deref<Target = Connection>;
     
-    fn as_params(&self) -> Box<[(&str, &dyn ToSql)]>;
+    fn as_params(&self) -> Result<Parameters>;
 }
 
 #[repr(u8)]
@@ -38,4 +39,18 @@ pub enum OnConflict {
     Ignore,
     Replace,
     Rollback,
+}
+
+pub enum Parameter<'a> {
+    Borrowed(&'a dyn ToSql),
+    Boxed(Box<dyn ToSql>)
+}
+
+impl<'a> ToSql for Parameter<'a> {
+    fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
+        match self {
+            Self::Borrowed(param) => param.to_sql(),
+            Self::Boxed(param) => param.to_sql(),
+        }
+    }
 }
