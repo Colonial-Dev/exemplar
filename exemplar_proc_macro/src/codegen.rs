@@ -62,10 +62,9 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     
     let insert = quote! {
         #[inline]
-        fn insert<C>(&self, conn: &C) -> ::rusqlite::Result<()>
+        fn insert(&self, conn: &::rusqlite::Connection) -> ::rusqlite::Result<()>
         where
-            Self: ::std::marker::Sized,
-            C: ::exemplar::Connector
+            Self: ::std::marker::Sized
         {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
         }
@@ -73,15 +72,14 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
 
     let insert_or = quote! {
         #[inline]
-        fn insert_or<C>(&self, conn: &C, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
+        fn insert_or(&self, conn: &::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()>
         where
-            Self: ::std::marker::Sized,
-            C: ::exemplar::Connector
+            Self: ::std::marker::Sized
         {
             use ::exemplar::OnConflict::*;
             
             let exec = |sql: &str| -> ::rusqlite::Result<()> {
-                let mut stmt = conn.get().prepare_cached(sql)?;
+                let mut stmt = conn.prepare_cached(sql)?;
                 
                 let params = [
                     #((#col_names, #field_idents as &dyn ::rusqlite::ToSql)),*
@@ -195,8 +193,8 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
         return QuoteStream::new()
     };
 
-    let module = derivee.name.to_string().to_lowercase();
-    let module = format_ident!("{}_exemplar_check", module);
+    let func = derivee.name.to_string().to_lowercase();
+    let func = format_ident!("{}_exemplar_check", func);
 
     let table = &derivee.table;
     let columns = derivee.col_names();
@@ -205,33 +203,31 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
         // Hack to prevent clippy::items_after_test_module from firing
         #[cfg(not(not(test)))]
         #[automatically_derived]
-        mod #module {
+        #[test]
+        fn #func() {
             use ::rusqlite::Connection;
 
-            #[test]
-            fn schema_matches() {
-                let schema = include_str!(#path);
+            let schema = include_str!(#path);
 
-                let conn = Connection::open_in_memory()
-                    .expect("In-memory DB connection should open successfully.");
+            let conn = Connection::open_in_memory()
+                .expect("In-memory DB connection should open successfully.");
 
-                conn.execute_batch(schema)
-                    .expect("Failed to apply provided schema to check DB.");
+            conn.execute_batch(schema)
+                .expect("Failed to apply provided schema to check DB.");
 
-                let mut names = String::new();
+            let mut names = String::new();
 
-                conn.pragma(None, "table_info", #table, |row| {
-                    let name = row.get::<_, String>("name")
-                        .expect("Failed to get name for table row.");
+            conn.pragma(None, "table_info", #table, |row| {
+                let name = row.get::<_, String>("name")
+                    .expect("Failed to get name for table row.");
 
-                    names += &name;
-                    names += "\n";
+                names += &name;
+                names += "\n";
 
-                    Ok(())
-                }).expect("Failed to query table_info pragma.");
+                Ok(())
+            }).expect("Failed to query table_info pragma.");
 
-                #(assert!(names.contains(#columns)));*
-            }
+            #(assert!(names.contains(#columns)));*
         }
     }
 }

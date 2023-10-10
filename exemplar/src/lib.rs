@@ -35,11 +35,9 @@ mod macros;
 
 use std::ops::Deref;
 
-use rusqlite::Connection;
 use rusqlite::Result;
 use rusqlite::Row;
 use rusqlite::ToSql;
-use rusqlite::Transaction;
 
 use rusqlite::types::{
     ToSqlOutput,
@@ -121,20 +119,18 @@ pub trait Model {
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert<C>(&self, conn: &C) -> Result<()>
+    fn insert(&self, conn: &::rusqlite::Connection) -> Result<()>
     where
-        Self: Sized,
-        C: Connector;
-
+        Self: Sized;
+    
     /// Attempt to insert `self` into the database behind the provided connection, using the provided [conflict resolution strategy](OnConflict).
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert_or<C>(&self, conn: &C, strategy: OnConflict) -> Result<()>
+    fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>
     where
-        Self: Sized,
-        C: Connector;
+        Self: Sized;
     
     /// Generate a slice of named [`Parameters`] from an instance of `self`.
     /// 
@@ -161,39 +157,6 @@ pub trait Model {
     fn metadata() -> ModelMeta
     where
         Self: Sized;
-}
-
-/// Trait for abstracting over possible connection types.
-/// 
-/// This trait is implemented for [`Connection`] and [`Transaction`](rusqlite::Transaction)
-pub trait Connector {
-    fn get(&self) -> &Connection;
-}
-
-impl Connector for Connection {
-    #[inline(always)]
-    fn get(&self) -> &Connection {
-        self
-    }
-}
-
-impl Connector for Transaction<'_> {
-    #[inline(always)]
-    fn get(&self) -> &Connection {
-        self
-    }
-}
-
-#[cfg(feature = "r2d2")]
-use r2d2::PooledConnection;
-#[cfg(feature = "r2d2")]
-use r2d2_sqlite::SqliteConnectionManager as Sqlite;
-#[cfg(feature = "r2d2")]
-impl Connector for PooledConnection<Sqlite> {
-    #[inline(always)]
-    fn get(&self) -> &Connection {
-        self.deref()
-    }
 }
 
 /// Possible conflict resolution strategies when using [`Model::insert_or`].
