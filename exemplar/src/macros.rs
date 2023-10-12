@@ -225,7 +225,7 @@ macro_rules! sql_enum {
         $(#[$enum_doc])*
         #[repr(i64)]
         #[automatically_derived]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub enum $name {
             $($(#[$variant_doc])* $vname),*
         }
