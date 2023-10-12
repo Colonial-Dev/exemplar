@@ -98,7 +98,7 @@ pub use crate::macros::*;
 
 /// Type alias for the outcome of converting a value to an SQL-friendly representation.
 /// 
-/// Note that the lifetime parameter is explicitly fixed as `'static` for the benefit of [`Model::as_params`].
+/// Note that the lifetime parameter is explicitly fixed as `'static` for the benefit of [`Model::to_params`].
 /// 
 /// # Example
 /// ```rust
@@ -183,13 +183,13 @@ pub trait Model {
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
     fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>;
     
-    /// Generate a slice of named [`Parameters`] from an instance of `self`.
+    /// Generate a slice of named [`Parameters`] from an instance of the implementing type.
     ///  
     /// # Performance
     /// This method allocates at least once, in order to [`Box`] the returned slice.
     /// 
     /// If the implementing type has any fields annotated with `#[bind]`, an additional boxing will be incurred for each annotated field.
-    fn as_params(&self) -> Result<Parameters>;
+    fn to_params(&self) -> Result<Parameters>;
 
     /// Static dispatch version of [`Model::metadata_dyn`].
     fn metadata() -> ModelMeta
@@ -202,7 +202,7 @@ pub trait Model {
     /// If (for whatever reason) you find yourself needing to dynamically reflect on [`Model`] properties, then this is for you.
     /// 
     /// # Performance
-    /// Despite the name, [`ModelMeta`] consists solely of `'static` data generated at compile time, making it trivially copyable.
+    /// Despite the name of this method, [`ModelMeta`] consists solely of `'static` data generated at compile time, making it trivially copyable.
     /// 
     /// The only overhead on this call is therefore dynamic dispatch and several shallow copies.
     fn metadata_dyn(&self) -> ModelMeta;
@@ -245,7 +245,7 @@ impl Default for OnConflict {
 
 /// [`Cow`](std::borrow::Cow)-like type for query parameters.
 /// 
-/// Necessary to efficiently implement [`Model::as_params`] - while most fields can be directly referenced as
+/// Necessary to efficiently implement [`Model::to_params`] - while most fields can be directly referenced as
 /// a [`dyn ToSql`](ToSql), those with `#[bind]` and `#[extr]` parameters require a non-trivial conversion step.
 /// 
 /// [`Self::Borrowed`] is used for the former case, while [`Self::Boxed`] is used for the latter case. 

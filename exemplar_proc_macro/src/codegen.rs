@@ -97,7 +97,7 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     (insert, insert_or)
 }
 
-pub fn as_params(derivee: &Derivee) -> QuoteStream {
+pub fn to_params(derivee: &Derivee) -> QuoteStream {
     let col_names = derivee
         .col_names()
         .map(|mut str| {
@@ -121,7 +121,7 @@ pub fn as_params(derivee: &Derivee) -> QuoteStream {
     
     quote! {
         #[inline]
-        fn as_params(&self) -> ::rusqlite::Result<::exemplar::Parameters> {
+        fn to_params(&self) -> ::rusqlite::Result<::exemplar::Parameters> {
             use ::std::boxed::Box;
             use ::exemplar::Parameter::*;
 

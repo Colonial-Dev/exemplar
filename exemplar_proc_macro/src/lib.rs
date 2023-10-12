@@ -71,7 +71,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
 
     let from_row            = codegen::from_row(&derivee);
     let (insert, insert_or) = codegen::inserts(&derivee);
-    let as_params           = codegen::as_params(&derivee);
+    let to_params           = codegen::to_params(&derivee);
     let metadata            = codegen::metadata(&derivee);
     let check_test          = codegen::check_test(&derivee);
     
@@ -81,7 +81,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
             #from_row
             #insert
             #insert_or
-            #as_params
+            #to_params
             #metadata
         }
 
