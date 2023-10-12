@@ -3,11 +3,18 @@
 //! # Getting Started
 //! A taste of what you can do:
 //! ```rust
-//! # use std::path::{PathBuf, Path};
-//! # use exemplar::Model;
-//! #[derive(Model)]
+//! use std::path::{
+//!     PathBuf,
+//!     Path
+//! };
+//! 
+//! use exemplar::Model;
+//! use rusqlite::Result;
+//! use rusqlite::Connection;
+//! 
+//! #[derive(Debug, PartialEq, Model)]
 //! #[table("users")]
-//! #[check("schema.sql")]
+//! #[check("../tests/schema.sql")]
 //! struct User {
 //!    username: String,
 //!    #[bind(bind_path)]
@@ -16,8 +23,54 @@
 //!    #[column("pwd")]
 //!    password: Vec<u8>,
 //! }
-//! # fn bind_path(value: &Path) -> exemplar::BindResult { panic!() }
-//! # fn extr_path(value: &rusqlite::types::ValueRef) -> exemplar::ExtrResult<PathBuf> { panic!() }
+//! 
+//! fn main() -> Result<()> {
+//!     let conn = Connection::open_in_memory()?;
+//! 
+//!     conn.execute_batch(
+//!         include_str!("../tests/schema.sql")
+//!     )?;
+//! 
+//!     let alice = User {
+//!         username: "Alice".to_owned(),
+//!         home_dir: "/var/home/alice".into(),
+//!         password: b"hunter2".to_vec()
+//!     };
+//! 
+//!     let bob = User {
+//!         username: "Bob".to_owned(),
+//!         home_dir: "/var/home/robert".into(),
+//!         password: b"password".to_vec()
+//!     };
+//! 
+//!     alice.insert(&conn)?;
+//!     bob.insert(&conn)?;
+//! 
+//!     let mut stmt = conn.prepare("SELECT * FROM users ORDER BY username ASC")?;
+//!     let mut iter = stmt.query_and_then([], User::from_row)?;
+//! 
+//!     assert_eq!(alice, iter.next().unwrap()?);
+//!     assert_eq!(bob, iter.next().unwrap()?);
+//! 
+//!     Ok(())
+//! }
+//! # 
+//! # fn bind_path(value: &Path) -> exemplar::BindResult { 
+//! #    use rusqlite::types::Value;
+//! #    use rusqlite::types::ToSqlOutput;
+//! #    let str = value.to_string_lossy().into_owned();
+//! #    
+//! #    Ok(ToSqlOutput::Owned(
+//! #        Value::Text(str)
+//! #    )) 
+//! # }
+//! # 
+//! # fn extr_path(value: &rusqlite::types::ValueRef) -> exemplar::ExtrResult<PathBuf> { 
+//! #   let path = value.as_str()?;
+//! #   let path = PathBuf::from(path);
+//! # 
+//! #   Ok(path)
+//! # }
 //! ```
 //! 
 //! Exemplar is based around the [`Model`] trait, which has its own [derive macro](crate::macros::Model).
@@ -85,14 +138,17 @@ pub type ExtrResult<T> = FromSqlResult<T>;
 /// Type alias for a boxed slice of named query parameters.
 pub type Parameters<'a> = Box<[(&'a str, Parameter<'a>)]>;
 
-/// An interface for types that model database tables.
+/// An interface for types that model SQLite database tables.
 /// 
-/// Ordinarily you would use the associated [derive macro](crate::macros::Model) to implement this trait,
-/// but it's perfectly acceptable to implement it by hand.
+/// You should use the associated [derive macro](crate::macros::Model) to implement this trait.
+/// 
+/// # Object Safety
+/// `Model` is mostly object safe, so you *can* have a [`dyn Model`](Model). The only caveat is that 
+/// the [`from_row`](Model::from_row) method is bounded to `Self: Sized` - you can't get a concrete `Self` from a trait object.
 pub trait Model {
-    /// Attempt to extract an instance of [`Self`] from the provided [`Row`].
+    /// Attempt to extract an instance of `Self` from the provided [`Row`].
     /// 
-    /// Best used with the [`query_and_then`](rusqlite::Statement::query_and_then) method on [`Statement`](rusqlite::Statement):
+    /// Best used with the [`query_and_then`](https://docs.rs/rusqlite/latest/rusqlite/struct.Statement.html#method.query_and_then) method on [`Statement`](rusqlite::Statement):
     /// 
     /// ```ignore
     /// #[derive(Model)]
@@ -105,6 +161,8 @@ pub trait Model {
     /// stmt.query_and_then([], Person::from_row)?
     ///     .map(|_| ...)
     /// ```
+    /// 
+    /// Note that this method is *not* object safe - you can't get a concrete `Self` from a [`dyn Model`](Model).
     fn from_row(row: &Row) -> Result<Self>
     where
         Self: Sized;
@@ -126,13 +184,11 @@ pub trait Model {
     fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>;
     
     /// Generate a slice of named [`Parameters`] from an instance of `self`.
-    /// 
-    /// This method is object-safe, making it callable on a [`dyn Model`](Model).
-    /// 
+    ///  
     /// # Performance
     /// This method allocates at least once, in order to [`Box`] the returned slice.
     /// 
-    /// If the implementing type has any fields annotated with `#[bind]`/`#[extr]`, an additional boxing will be incurred for each annotated field.
+    /// If the implementing type has any fields annotated with `#[bind]`, an additional boxing will be incurred for each annotated field.
     fn as_params(&self) -> Result<Parameters>;
 
     /// Static dispatch version of [`Model::metadata_dyn`].
@@ -142,26 +198,21 @@ pub trait Model {
 
     /// Retrieve [`ModelMeta`] (model metadata) associated with the implementing type.
     /// 
-    /// This method is object-safe, making it callable on a [`dyn Model`](Model). 
+    /// This is the dynamic dispatch version of [`Model::metadata`].
     /// If (for whatever reason) you find yourself needing to dynamically reflect on [`Model`] properties, then this is for you.
     /// 
     /// # Performance
-    /// [`ModelMeta`] is composed entirely of `&'static`/known-at-comptime data, making it little more than a bundle of trivially-copyable `usize`s.
+    /// Despite the name, [`ModelMeta`] consists solely of `'static` data generated at compile time, making it trivially copyable.
     /// 
     /// The only overhead on this call is therefore dynamic dispatch and several shallow copies.
     fn metadata_dyn(&self) -> ModelMeta;
 }
-
-trait Foo {}
-
-impl<T: Model> Foo for T {}
 
 /// Possible conflict resolution strategies when using [`Model::insert_or`].
 /// 
 /// The default setting (used by [`Model::insert`]) is [`Abort`](OnConflict::Abort).
 /// 
 /// Sourced from the [SQLite docs](https://www.sqlite.org/lang_conflict.html).
-#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OnConflict {
     /// When an applicable constraint violation occurs, error and revert any changes made by the current SQL statement.
@@ -229,15 +280,66 @@ impl<'a> Deref for Parameter<'a> {
 
 /// Metadata about a [`Model`] implementor.
 /// 
-/// Can be retrieved via the [`Model::metadata`] method.
+/// Can be retrieved via the [`Model::metadata`] and [`Model::metadata_dyn`] methods.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModelMeta {
     /// The name of the model type.
+    /// 
+    /// # Example
+    /// ```rust
+    /// # use exemplar::*;
+    /// #[derive(Model)]
+    /// #[table("foos")]
+    /// pub struct Foo { 
+    ///     pub field: String 
+    /// }
+    /// 
+    /// assert_eq!("Foo", Foo::metadata().model)
+    /// ```
     pub model: &'static str,
     /// The name of the model table.
+    /// 
+    /// # Example
+    /// ```rust
+    /// # use exemplar::*;
+    /// #[derive(Model)]
+    /// #[table("foos")]
+    /// pub struct Foo { 
+    ///     pub field: String 
+    /// }
+    /// 
+    /// assert_eq!("foos", Foo::metadata().table)
+    /// ```
     pub table: &'static str,
-    /// The field names of the model type.
+    /// The field names of the model type, in order of their definition.
+    /// 
+    /// # Example
+    /// ```rust
+    /// # use exemplar::*;
+    /// #[derive(Model)]
+    /// #[table("foos")]
+    /// pub struct Foo { 
+    ///     pub bar: String,
+    ///     pub qux: String,
+    /// }
+    /// 
+    /// assert_eq!(&["bar", "qux"], Foo::metadata().fields)
+    /// ```
     pub fields: &'static [&'static str],
     /// The columns of the model table.
+    /// 
+    /// # Example
+    /// ```rust
+    /// # use exemplar::*;
+    /// #[derive(Model)]
+    /// #[table("foos")]
+    /// pub struct Foo { 
+    ///     pub bar: String,
+    ///     #[column("baz")]
+    ///     pub qux: String,
+    /// }
+    /// 
+    /// assert_eq!(&["bar", "baz"], Foo::metadata().columns)
+    /// ```
     pub columns: &'static [&'static str],
 }

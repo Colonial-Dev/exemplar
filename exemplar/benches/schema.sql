@@ -1,0 +1,1 @@
+CREATE TABLE users (username, home_dir, pwd);
