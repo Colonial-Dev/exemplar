@@ -95,7 +95,7 @@ without falling into ORM territory.
 ### *"Is it blazing fast?"*
 Yes. On my machine (according to [this](https://github.com/Colonial-Dev/exemplar/blob/master/exemplar/benches/query.rs) benchmark) Exemplar can:
 - Insert a non-trivial model type in ~600 nanoseconds (1.6 million rows/sec)
-- Query and reconstruct the same type in ~9 microseconds (111,000 rows/sec, `SELECT *`'ing from a table with ~8 million rows)
+- Query and reconstruct the same type in ~9 microseconds (111,000 rows/sec, using `SELECT * LIMIT 1`)
 
 Obviously the credit for this speed goes to the SQLite and `rusqlite` developers, but I can confidently say that I didn't slow things down!
 
@@ -105,6 +105,7 @@ Obviously the credit for this speed goes to the SQLite and `rusqlite` developers
 The pain points I tried to fix were:
 - Needing to allocate and juggle a slice of `String` column names to efficiently deserialize rows. Exemplar statically knows what columns to expect, so `from_row` can extract each field in a single line.
 - Odd design choices for field-less `enum`s - they are inefficiently serialized as `TEXT` instead of `INTEGER`. This was nice for debugging, but I figured the faster option should be Exemplar's default.
+- `to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap()`
 - General `serde` overhead popping up, both at compile and runtime.
 
 ## Acknowledgements

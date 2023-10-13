@@ -21,6 +21,8 @@ rusqlite = "0.29.0"
 [dev-dependencies]
 anyhow = "1.0.75"
 criterion = "0.5.1"
+serde = "1.0.189"
+serde_rusqlite = "0.33.1"
 
 [[bench]]
 name = "binding_strategies"
@@ -28,4 +30,8 @@ harness = false
 
 [[bench]]
 name = "query"
+harness = false
+
+[[bench]]
+name = "comparison"
 harness = false
