@@ -27,5 +27,5 @@ name = "binding_strategies"
 harness = false
 
 [[bench]]
-name = "insert"
+name = "query"
 harness = false

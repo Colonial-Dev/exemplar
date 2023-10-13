@@ -53,13 +53,25 @@ fn criterion_benchmark(c: &mut Criterion) {
     let txn = conn.transaction().unwrap();
 
     c.bench_function("insert", |b| b.iter(|| {
-        #[allow(clippy::unit_arg)]
-        std::hint::black_box({
-            alice.insert(&txn).unwrap();
-        })
+        alice.insert(&txn).unwrap();
     }));
 
     txn.commit().unwrap();
+
+    let mut stmt = conn.prepare("SELECT * FROM users LIMIT 1")
+        .unwrap();
+
+    c.bench_function("retrieve", |b| b.iter(|| {
+        stmt
+            .query_and_then([], User::from_row)
+            .unwrap()
+            .map(Result::unwrap)
+            .for_each(|u| {
+                black_box(u);
+            })
+    }));
+
+    drop(stmt);
     drop(conn);
 
     std::fs::remove_file("benches/bench.db")
