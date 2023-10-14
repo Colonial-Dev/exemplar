@@ -103,10 +103,13 @@ Obviously the credit for this speed goes to the SQLite and `rusqlite` developers
 `serde_rusqlite` is a clever hack, but it still involved too much contorting and boilerplate for my taste - that's why I created Exemplar.
 
 The pain points I tried to fix were:
-- Needing to allocate and juggle a slice of `String` column names to efficiently deserialize rows. Exemplar statically knows what columns to expect, so `from_row` can extract each field in a single line.
+- Needing to allocate and juggle a slice of `String` column names to efficiently deserialize rows - probably due to `serde` limitations?
+  - Exemplar statically knows what columns to expect, so `from_row` requires no extra inputs and makes no superfluous allocations.
 - Odd design choices for field-less `enum`s - they are inefficiently serialized as `TEXT` instead of `INTEGER`. This was nice for debugging, but I figured the faster option should be Exemplar's default.
 - `to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap()`
 - General `serde` overhead popping up, both at compile and runtime.
+  - Benchmarking shows that `serde_rusqlite` is ~20% slower on insert operations compared to Exemplar.
+  - Retrieval operations are equally fast, likely because the final conversion step is dwarfed by the time spent in SQLite code.
 
 ## Acknowledgements
 - `rusqlite`, for providing the foundation on which this library is built.

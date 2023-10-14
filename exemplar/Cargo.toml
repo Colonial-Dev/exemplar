@@ -15,7 +15,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-exemplar_proc_macro = { version = "0.5.7" }
+exemplar_proc_macro = { version = "0.6.1" }
 rusqlite = "0.29.0"
 
 [dev-dependencies]

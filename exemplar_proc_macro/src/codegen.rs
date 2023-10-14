@@ -33,7 +33,7 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
     }
 }
 
-pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
+pub fn inserts(derivee: &Derivee) -> QuoteStream {
     let col_names = derivee
         .col_names()
         .map(|mut str| {
@@ -59,15 +59,13 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
     let ignore_sql   = derivee.gen_query(Some("IGNORE"));
     let replace_sql  = derivee.gen_query(Some("REPLACE"));
     let rollback_sql = derivee.gen_query(Some("ROLLBACK"));
-    
-    let insert = quote! {
+
+    quote! {
         #[inline]
         fn insert(&self, conn: &::rusqlite::Connection) -> ::rusqlite::Result<()> {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
         }
-    };
 
-    let insert_or = quote! {
         #[inline]
         fn insert_or(&self, conn: &::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()> {
             use ::exemplar::OnConflict::*;
@@ -92,9 +90,7 @@ pub fn inserts(derivee: &Derivee) -> (QuoteStream, QuoteStream) {
                 Rollback => exec(#rollback_sql),
             }
         }
-    };
-
-    (insert, insert_or)
+    }
 }
 
 pub fn to_params(derivee: &Derivee) -> QuoteStream {
@@ -154,10 +150,12 @@ pub fn metadata(derivee: &Derivee) -> QuoteStream {
     let columns = derivee.col_names();
     
     quote! {
+        #[inline]
         fn metadata_dyn(&self) -> ::exemplar::ModelMeta {
             Self::metadata()
         }
         
+        #[inline]
         fn metadata() -> ::exemplar::ModelMeta
         where
             Self: ::std::marker::Sized
