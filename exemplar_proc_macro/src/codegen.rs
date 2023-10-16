@@ -92,7 +92,7 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
         }
 
         #[inline]
-        fn bind_to(&self, stmt: &mut::rusqlite::Statement) -> ::rusqlite::Result<()> {
+        fn insert_with(&self, stmt: &mut::rusqlite::Statement) -> ::rusqlite::Result<()> {
             stmt.execute(rusqlite::named_params! {
                 #(#col_names: #field_idents),*
             })?;

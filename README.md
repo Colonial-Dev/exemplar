@@ -11,15 +11,6 @@
 ## Getting Started
 A taste of what you can do:
 ```rust
-use std::path::{
-    PathBuf,
-    Path
-};
- 
-use exemplar::Model;
-use rusqlite::Result;
-use rusqlite::Connection;
- 
 #[derive(Debug, PartialEq, Model)]
 #[table("users")]
 #[check("../tests/schema.sql")]
@@ -96,7 +87,7 @@ without falling into ORM territory.
 - Interface portability. Only `rusqlite` is supported.
 
 ### *"Is it blazing fast?"*
-Yes. On my machine (according to [this](https://github.com/Colonial-Dev/exemplar/blob/master/exemplar/benches/query.rs) benchmark) Exemplar can:
+Yes. On my machine (according to [these](https://github.com/Colonial-Dev/exemplar/tree/master/exemplar/benches) benchmarks) Exemplar can:
 - Insert a non-trivial model type in ~600 nanoseconds (1.6 million rows/sec)
 - Query and reconstruct the same type in ~9 microseconds (111,000 rows/sec, using `SELECT * LIMIT 1`)
 
@@ -109,8 +100,8 @@ The pain points I tried to fix were:
 - Needing to allocate and juggle a slice of `String` column names to efficiently deserialize rows - probably due to `serde` limitations?
   - Exemplar statically knows what columns to expect, so `from_row` requires no extra inputs and makes no superfluous allocations.
 - Odd design choices for field-less `enum`s - they are inefficiently serialized as `TEXT` instead of `INTEGER`. This was nice for debugging, but I figured the faster option should be Exemplar's default.
-- `to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap()`
-    - Equivalent to `row1.insert(&conn)` or `row1.bind_to(&stmt)` in Exemplar.
+- `to_params_named(&row1).unwrap().to_slice().as_slice()`
+    - Equivalent to `row1.insert(&conn)` or `row1.insert_with(&stmt)` in Exemplar.
 - General `serde` overhead popping up, both at compile and runtime.
   - Benchmarking shows that `serde_rusqlite` is ~25% slower on insert operations compared to Exemplar.
   - Retrieval operations are equally fast, likely because the final conversion step is nothing compared to query calculation and I/O.

@@ -3,15 +3,15 @@
 //! # Getting Started
 //! A taste of what you can do:
 //! ```rust
-//! use std::path::{
-//!     PathBuf,
-//!     Path
-//! };
-//! 
-//! use exemplar::Model;
-//! use rusqlite::Result;
-//! use rusqlite::Connection;
-//! 
+//! # use std::path::{
+//! #    PathBuf,
+//! #    Path
+//! # };
+//! # 
+//! # use exemplar::Model;
+//! # use rusqlite::Result;
+//! # use rusqlite::Connection;
+//! # 
 //! #[derive(Debug, PartialEq, Model)]
 //! #[table("users")]
 //! #[check("../tests/schema.sql")]
@@ -175,14 +175,18 @@ pub trait Model {
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
-    /// so any calls after the first with the same connection and `self` type should be significantly faster.
+    /// so any calls after the first with the same connection and `self` type should be *almost* as fast as reusing a [`Statement`].
+    /// 
+    /// If your program is extremely write-heavy, consider using [`Model::insert_with`], which avoids the overhead of a map lookup.
     fn insert(&self, conn: &Connection) -> Result<()>;
     
     /// Attempt to insert `self` into the database behind the provided connection, using the provided [conflict resolution strategy](OnConflict).
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
-    /// so any calls after the first with the same connection and `self` type should be significantly faster.
+    /// so any calls after the first with the same connection and `self` type should be *almost* as fast as reusing a [`Statement`].
+    /// 
+    /// If your program is extremely write-heavy, consider using [`Model::insert_with`], which avoids the overhead of a map lookup.
     fn insert_or(&self, conn: &Connection, strategy: OnConflict) -> Result<()>;
     
     /// Attempt to bind `self` to the provided statement and execute it.
@@ -191,7 +195,7 @@ pub trait Model {
     /// - Enabling insertions into secondary tables (such as in-memory caches.)
     /// - Squeezing out a few hundred extra nanoseconds of performance on insert operations. [`insert`](Model::insert)
     /// and [`insert_or`](Model::insert_or) use [`prepare_cached`](https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.prepare_cached)
-    /// to make the API convenient, but this incurs a map lookup on every call. [`bind_to`](Model::bind_to) can therefore
+    /// to make the API convenient, but this incurs a map lookup on every call. [`insert_with`](Model::insert_with) can therefore
     /// help you squeeze out a bit more speed if your program is extremely write-heavy.
     /// 
     /// # Usage
@@ -237,11 +241,11 @@ pub trait Model {
     ///     baz: "my_baz".to_string(),
     /// };
     /// 
-    /// foo.bind_to(&mut stmt)?;
+    /// foo.insert_with(&mut stmt)?;
     /// # Ok(())
     /// # }
     /// ```
-    fn bind_to(&self, stmt: &mut Statement) -> Result<()>;
+    fn insert_with(&self, stmt: &mut Statement) -> Result<()>;
     
     /// Generate a slice of named [`Parameters`] from an instance of the implementing type.
     ///  
