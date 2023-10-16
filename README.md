@@ -10,7 +10,7 @@
 
 ## Getting Started
 A taste of what you can do:
-```rs
+```rust
 use std::path::{
     PathBuf,
     Path
@@ -54,7 +54,10 @@ fn main() -> Result<()> {
     alice.insert(&conn)?;
     bob.insert(&conn)?;
  
-    let mut stmt = conn.prepare("SELECT * FROM users ORDER BY username ASC")?;
+    let mut stmt = conn.prepare("
+        SELECT * FROM users ORDER BY username ASC
+    ")?;
+    
     let mut iter = stmt.query_and_then([], User::from_row)?;
  
     assert_eq!(alice, iter.next().unwrap()?);
@@ -107,9 +110,10 @@ The pain points I tried to fix were:
   - Exemplar statically knows what columns to expect, so `from_row` requires no extra inputs and makes no superfluous allocations.
 - Odd design choices for field-less `enum`s - they are inefficiently serialized as `TEXT` instead of `INTEGER`. This was nice for debugging, but I figured the faster option should be Exemplar's default.
 - `to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap()`
+    - Equivalent to `row1.insert(&conn)` or `row1.bind_to(&stmt)` in Exemplar.
 - General `serde` overhead popping up, both at compile and runtime.
-  - Benchmarking shows that `serde_rusqlite` is ~20% slower on insert operations compared to Exemplar.
-  - Retrieval operations are equally fast, likely because the final conversion step is dwarfed by the time spent in SQLite code.
+  - Benchmarking shows that `serde_rusqlite` is ~25% slower on insert operations compared to Exemplar.
+  - Retrieval operations are equally fast, likely because the final conversion step is nothing compared to query calculation and I/O.
 
 ## Acknowledgements
 - `rusqlite`, for providing the foundation on which this library is built.
