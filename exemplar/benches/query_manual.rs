@@ -3,18 +3,13 @@ use std::path::{Path, PathBuf};
 use criterion::*;
 use exemplar::*;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, Row};
 use rusqlite::types::ValueRef;
 
-#[derive(Debug, PartialEq, Eq, Model)]
-#[table("users")]
-#[check("schema.sql")]
+#[derive(Debug, PartialEq, Eq)]
 struct User {
     username: String,
-    #[bind(bind_path)]
-    #[extr(extr_path)]
     home_dir: PathBuf,
-    #[column("pwd")]
     password: Vec<u8>,
 }
 
@@ -52,18 +47,35 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let txn = conn.transaction().unwrap();
 
-    c.bench_function("insert", |b| b.iter(|| {
-        alice.insert(&txn).unwrap();
+    c.bench_function("insert (manual)", |b| b.iter(|| {
+        let mut stmt = txn.prepare_cached("
+            INSERT INTO users (username, home_dir, pwd) 
+            VALUES(:username, :home_dir, :pwd);
+        ").unwrap();
+        
+        stmt.execute(rusqlite::named_params! {
+            ":username": alice.username,
+            ":home_dir": bind_path(&alice.home_dir).unwrap(),
+            ":pwd": alice.password
+        }).unwrap();
     }));
 
     txn.commit().unwrap();
 
-    let mut stmt = conn.prepare("SELECT * FROM users LIMIT 1")
+    let mut stmt = conn.prepare_cached("SELECT * FROM users LIMIT 1")
         .unwrap();
 
-    c.bench_function("retrieve", |b| b.iter(|| {
+    let to_user = |row: &Row| -> rusqlite::Result<_> {
+        Ok(User {
+            username: row.get("username")?,
+            home_dir: extr_path(&row.get_ref("home_dir")?)?,
+            password: row.get("pwd")?
+        })
+    };
+
+    c.bench_function("retrieve (manual)", |b| b.iter(|| {
         stmt
-            .query_and_then([], User::from_row)
+            .query_and_then([], to_user)
             .unwrap()
             .map(Result::unwrap)
             .for_each(|u| {

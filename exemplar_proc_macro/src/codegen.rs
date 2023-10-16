@@ -34,14 +34,15 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
 }
 
 pub fn inserts(derivee: &Derivee) -> QuoteStream {
-    let col_names = derivee
+    let col_names: Vec<_> = derivee
         .col_names()
         .map(|mut str| {
             str.insert(0, ':');
             Literal::string(&str)
-        });
+        })
+        .collect();
     
-    let field_idents = derivee
+    let field_idents: Vec<_> = derivee
         .field_idents()
         .zip(&derivee.fields)
         // Handle #[bind]/no #[bind]
@@ -52,7 +53,8 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
             else {
                 quote! { &self.#ident }
             }
-        });
+        })
+        .collect();
 
     let abort_sql    = derivee.gen_query(None);
     let fail_sql     = derivee.gen_query(Some("FAIL"));
@@ -72,12 +74,10 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
             
             let exec = |sql: &str| -> ::rusqlite::Result<()> {
                 let mut stmt = conn.prepare_cached(sql)?;
-                
-                let params = [
-                    #((#col_names, #field_idents as &dyn ::rusqlite::ToSql)),*
-                ];
 
-                stmt.execute(&params)?;
+                stmt.execute(rusqlite::named_params! {
+                    #(#col_names: #field_idents),*
+                })?;
 
                 Ok(())
             };
@@ -89,6 +89,15 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
                 Replace => exec(#replace_sql),
                 Rollback => exec(#rollback_sql),
             }
+        }
+
+        #[inline]
+        fn bind_to(&self, stmt: &mut::rusqlite::Statement) -> ::rusqlite::Result<()> {
+            stmt.execute(rusqlite::named_params! {
+                #(#col_names: #field_idents),*
+            })?;
+
+            Ok(())
         }
     }
 }

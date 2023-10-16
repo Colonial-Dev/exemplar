@@ -85,8 +85,10 @@ mod macros;
 
 use std::ops::Deref;
 
+use rusqlite::Connection;
 use rusqlite::Result;
 use rusqlite::Row;
+use rusqlite::Statement;
 use rusqlite::ToSql;
 
 use rusqlite::types::{
@@ -148,7 +150,7 @@ pub type Parameters<'a> = Box<[(&'a str, Parameter<'a>)]>;
 pub trait Model {
     /// Attempt to extract an instance of `Self` from the provided [`Row`].
     /// 
-    /// Best used with the [`query_and_then`](https://docs.rs/rusqlite/latest/rusqlite/struct.Statement.html#method.query_and_then) method on [`Statement`](rusqlite::Statement):
+    /// Best used with the [`query_and_then`](https://docs.rs/rusqlite/latest/rusqlite/struct.Statement.html#method.query_and_then) method on [`Statement`]:
     /// 
     /// ```ignore
     /// #[derive(Model)]
@@ -174,14 +176,72 @@ pub trait Model {
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert(&self, conn: &::rusqlite::Connection) -> Result<()>;
+    fn insert(&self, conn: &Connection) -> Result<()>;
     
     /// Attempt to insert `self` into the database behind the provided connection, using the provided [conflict resolution strategy](OnConflict).
     /// 
     /// # Performance
     /// This method uses [`prepare_cached`](rusqlite::Connection::prepare_cached) to create the insertion SQL statement,
     /// so any calls after the first with the same connection and `self` type should be significantly faster.
-    fn insert_or(&self, conn: &::rusqlite::Connection, strategy: OnConflict) -> Result<()>;
+    fn insert_or(&self, conn: &Connection, strategy: OnConflict) -> Result<()>;
+    
+    /// Attempt to bind `self` to the provided statement and execute it.
+    /// 
+    /// This method serves two purposes:
+    /// - Enabling insertions into secondary tables (such as in-memory caches.)
+    /// - Squeezing out a few hundred extra nanoseconds of performance on insert operations. [`insert`](Model::insert)
+    /// and [`insert_or`](Model::insert_or) use [`prepare_cached`](https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.prepare_cached)
+    /// to make the API convenient, but this incurs a map lookup on every call. [`bind_to`](Model::bind_to) can therefore
+    /// help you squeeze out a bit more speed if your program is extremely write-heavy.
+    /// 
+    /// # Usage
+    /// Exemplar binds fields to statements as *named parameters.* Take this example model type:
+    /// 
+    /// ```rust
+    /// # use exemplar::*;
+    /// #[derive(Model)]
+    /// #[table("foos")]
+    /// pub struct Foo {
+    ///     pub bar: String,
+    ///     pub baz: String,
+    /// }
+    /// ```
+    /// 
+    /// Exemplar will bind `bar` to `:bar` and `baz` to `:baz`, which can be used in a query like this:
+    /// 
+    /// ```sql
+    /// INSERT INTO foos (bar, baz) 
+    /// VALUES(:bar, :baz);
+    /// ```
+    /// 
+    /// Or, in Rust:
+    /// 
+    /// ```rust
+    /// # use exemplar::*;
+    /// # use rusqlite::*;
+    /// # #[derive(Model)]
+    /// # #[table("foos")]
+    /// # struct Foo { bar: String, baz: String }
+    /// # fn main() -> Result<()> {
+    /// let conn = Connection::open_in_memory()?;
+    /// 
+    /// conn.execute("CREATE TABLE foos (bar, baz);", [])?;
+    /// 
+    /// let mut stmt = conn.prepare("
+    ///     INSERT INTO foos (bar, baz) 
+    ///     VALUES(:bar, :baz);
+    /// ")?;
+    /// 
+    /// let foo = Foo {
+    ///     bar: "my_bar".to_string(),
+    ///     baz: "my_baz".to_string(),
+    /// };
+    /// 
+    /// foo.bind_to(&mut stmt)?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn bind_to(&self, stmt: &mut Statement) -> Result<()>;
     
     /// Generate a slice of named [`Parameters`] from an instance of the implementing type.
     ///  

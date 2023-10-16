@@ -1,16 +1,39 @@
-use criterion::*;
+use std::path::{Path, PathBuf};
 
-use serde::{Serialize, Deserialize};
-use serde_rusqlite::*;
+use criterion::*;
+use exemplar::*;
 
 use rusqlite::Connection;
+use rusqlite::types::ValueRef;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Model)]
+#[table("users")]
+#[check("schema.sql")]
 struct User {
     username: String,
-    home_dir: String,
-    #[serde(rename = "pwd")]
+    #[bind(bind_path)]
+    #[extr(extr_path)]
+    home_dir: PathBuf,
+    #[column("pwd")]
     password: Vec<u8>,
+}
+
+pub fn bind_path(value: &Path) -> BindResult {
+    use rusqlite::types::Value;
+    use rusqlite::types::ToSqlOutput;
+
+    let str = value.to_string_lossy().into_owned();
+
+    Ok(ToSqlOutput::Owned(
+        Value::Text(str)
+    ))
+}
+
+pub fn extr_path(value: &ValueRef) -> ExtrResult<PathBuf> {
+    let path = value.as_str()?;
+    let path = PathBuf::from(path);
+
+    Ok(path)
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -29,25 +52,18 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     let txn = conn.transaction().unwrap();
 
-    let mut stmt = txn.prepare("
-        INSERT INTO users (username, home_dir, pwd) VALUES(:username, :home_dir, :pwd);
-    ").unwrap();
-
-    c.bench_function("insert", |b| b.iter(|| {
-        stmt.execute(to_params_named(black_box(&alice)).unwrap().to_slice().as_slice()).unwrap();
+    c.bench_function("insert (exemplar)", |b| b.iter(|| {
+        alice.insert(&txn).unwrap();
     }));
 
-    drop(stmt);
     txn.commit().unwrap();
 
     let mut stmt = conn.prepare("SELECT * FROM users LIMIT 1")
         .unwrap();
 
-    let columns = columns_from_statement(&stmt);
-
-    c.bench_function("retrieve", |b| b.iter(|| {
+    c.bench_function("retrieve (exemplar)", |b| b.iter(|| {
         stmt
-            .query_and_then([], |row| from_row_with_columns::<User>(row, &columns))
+            .query_and_then([], User::from_row)
             .unwrap()
             .map(Result::unwrap)
             .for_each(|u| {
