@@ -193,7 +193,7 @@ macro_rules! record {
 /// 
 /// By default, `#[repr(i64)]` is used. The optional `Type` parameter can override this:
 /// 
-/// /// ```rust
+/// ```rust
 /// # use exemplar::sql_enum;
 /// sql_enum! {
 ///     Name => Color,
