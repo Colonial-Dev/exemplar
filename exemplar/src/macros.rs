@@ -2,11 +2,12 @@
 /// 
 /// # Requirements
 /// 
-/// [`Model`](crate::Model) can *only* be derived for `struct`s with suitable named fields.
+/// [`Model`](crate::Model) can *only* be derived for non-generic `struct`s with suitable named fields.
 /// 
 /// | Type | Example | Supported? |
 /// | ---- | ------- | ---------- |
 /// | Standard `struct` | `struct Person { name: String }` | ✔ |
+/// | Generic `struct`  | `struct Person<'a, T, const N: usize> { ... }` | ✘ |
 /// | Tuple struct | `struct Point(i64, i64)` | ✘ | 
 /// | Unit/ZST struct | `struct Unit;` or `struct Unit {}` | ✘ |
 /// | `enum`s | `enum Direction { Up, Down }` | ✘ |
@@ -64,7 +65,7 @@
 /// 
 /// More specifically, the generated test verifies that:
 /// - The specified table exists.
-/// - All specified columns/fields exist.
+/// - The columns in the schema match up with those specified by the model type. If the model has fields not present in the schema (or vice versa) the test will fail.
 /// 
 /// It does *not* verify the validity of column types, nor does it test actual insertion/retrieval.
 /// 
@@ -85,6 +86,32 @@
 /// - For `extr`, the signature should be [`fn(&ValueRef) -> ExtrResult<T>`](crate::ExtrResult). 
 /// 
 /// In both cases `T` is the type of the field being annotated. For some types (e.g. `PathBuf`) you may also be able to use a type it derefs to, like `Path`.
+/// 
+/// Example implementations for `PathBuf`:
+/// ```rust
+/// # use exemplar::*;
+/// # use std::path::{Path, PathBuf};
+/// # use rusqlite::types::ValueRef;
+/// pub fn bind_path(value: &Path) -> BindResult {
+///     use rusqlite::types::Value;
+///     use rusqlite::types::ToSqlOutput;
+///     
+///     // Depending on your program, it may make more sense
+///     // to error if a lossless conversion isn't possible.
+///     let str = value.to_string_lossy().into_owned();
+/// 
+///     Ok(ToSqlOutput::Owned(
+///         Value::Text(str)
+///     ))
+/// }
+/// 
+/// pub fn extr_path(value: &ValueRef) -> ExtrResult<PathBuf> {
+///     let path = value.as_str()?;
+///     let path = PathBuf::from(path);
+/// 
+///     Ok(path)
+/// }
+/// ```
 /// 
 /// ### `#[column]`
 /// Usage:
@@ -139,13 +166,51 @@ pub use exemplar_proc_macro::Model;
 ///     .query_and_then([], Age::from_row)?
 ///     .map(|age| ...);
 /// ```
+/// 
+/// # Notes
+/// 
+/// Doc comments (and other attributes) are supported:
+/// ```rust
+/// # use exemplar::*;
+/// record! {
+///     /// A person's name.
+///     name => String,
+///     /// A person's age.
+///     age  => u16,
+/// }
+/// ```
+/// Additionally, you can apply type-level attributes like derives on the `Name` argument.
+/// ```rust
+/// # use exemplar::*;
+/// record! {
+///     #[derive(Debug, Clone)]
+///     Name => Age,
+///     age  => u16,
+/// }
+/// ```
+/// (`record!` does not apply any derives automatically.)
+/// 
+/// This does *not* work without the `Name` argument, due to macro limitations - Rust can't
+/// disambiguate between "attributes for the struct" and "attributes for the field."
+/// 
+/// ```compile_fail
+/// # use exemplar::*;
+/// record! {
+///     #[derive(Debug, Clone)]
+///     /// A person's name.
+///     name => String,
+///     /// A person's age.
+///     age  => u16,
+/// }
+/// ```
 #[macro_export]
 macro_rules! record {
-    (Name => $name:ident, $($fname:ident => $ftype:ty),* $(,)?) => {
-        #[derive(Debug, Clone)]
+    ($(#[$struct_doc:meta])* Name => $name:ident, $($(#[$field_doc:meta])* $fname:ident => $ftype:ty),* $(,)?) => {
+        $(#[$struct_doc])*
+        /// 
         /// Automatically generated record type for storing query results.
         pub struct $name {
-            $(pub $fname : $ftype),*
+            $($(#[$field_doc])* pub $fname : $ftype),*
         }
         
         impl $name {
@@ -164,8 +229,8 @@ macro_rules! record {
             }
         }
     };
-    ($($fname:ident => $ftype:ty),* $(,)?) => {
-        record!(Name => Record, $($fname => $ftype),*);
+    ($($(#[$field_doc:meta])* $fname:ident => $ftype:ty),* $(,)?) => {
+        record!(Name => Record, $($(#[$field_doc])* $fname => $ftype),*);
     };
 }
 
@@ -225,9 +290,11 @@ macro_rules! record {
 /// ```rust
 /// # use exemplar::sql_enum;
 /// sql_enum! {
+///     #[derive(Default)]
 ///     /// An RGB color tag.
 ///     Name => Color,
 ///     /// Red
+///     #[default]
 ///     Red,
 ///     /// Green
 ///     Green,
