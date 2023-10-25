@@ -172,7 +172,7 @@ macro_rules! record {
 /// Generate an SQL-compatible field-less `enum`.
 /// 
 /// SQL compatible means:
-/// - `#[repr(i64)]` - the equivalent of SQLite's `INTEGER` type.
+/// - `#[repr(i*/u*)]`
 /// - Implements [`TryFrom<i64>`].
 /// - Implements [`ToSql`](https://docs.rs/rusqlite/latest/rusqlite/types/trait.ToSql.html) and [`FromSql`](https://docs.rs/rusqlite/latest/rusqlite/types/trait.FromSql.html).
 /// 
@@ -185,6 +185,19 @@ macro_rules! record {
 /// # use exemplar::sql_enum;
 /// sql_enum! {
 ///     Name => Color,
+///     Red,
+///     Green,
+///     Blue,
+/// };
+/// ```
+/// 
+/// By default, `#[repr(i64)]` is used. The optional `Type` parameter can override this:
+/// 
+/// /// ```rust
+/// # use exemplar::sql_enum;
+/// sql_enum! {
+///     Name => Color,
+///     Type => u8,
 ///     Red,
 ///     Green,
 ///     Blue,
@@ -224,9 +237,9 @@ macro_rules! record {
 /// ```
 #[macro_export]
 macro_rules! sql_enum {
-    ($(#[$enum_doc:meta])* Name => $name:ident, $($(#[$variant_doc:meta])* $vname:ident),* $(,)?) => {
+    ($(#[$enum_doc:meta])* Name => $name:ident, Type => $disc:ty, $($(#[$variant_doc:meta])* $vname:ident),* $(,)?) => {
         $(#[$enum_doc])*
-        #[repr(i64)]
+        #[repr($disc)]
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub enum $name {
             $($(#[$variant_doc])* $vname),*
@@ -273,6 +286,9 @@ macro_rules! sql_enum {
             }
         }
     };
+    ($(#[$enum_doc:meta])* Name => $name:ident, $($(#[$variant_doc:meta])* $vname:ident),* $(,)?) => {
+        sql_enum!($(#[$enum_doc])* Name => $name, Type => i64, $($(#[$variant_doc])* $vname),*);
+    }
 }
 
 #[cfg(test)]
@@ -280,6 +296,7 @@ mod tests {
 
     sql_enum! {
         Name => Color,
+        Type => u8,
         Red,
         Green,
         Blue
