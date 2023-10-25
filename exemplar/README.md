@@ -87,7 +87,7 @@ without falling into ORM territory.
 - Interface portability. Only `rusqlite` is supported.
 
 ### *"Is it blazing fast?"*
-Yes. On my machine (according to [this](https://github.com/Colonial-Dev/exemplar/blob/master/exemplar/benches/query.rs) benchmark) Exemplar can:
+Yes. On my machine (according to [these](https://github.com/Colonial-Dev/exemplar/tree/master/exemplar/benches) benchmarks) Exemplar can:
 - Insert a non-trivial model type in ~600 nanoseconds (1.6 million rows/sec)
 - Query and reconstruct the same type in ~9 microseconds (111,000 rows/sec, using `SELECT * LIMIT 1`)
 

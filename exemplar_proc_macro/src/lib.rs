@@ -24,7 +24,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
     let name = &ast.ident;
-
+    
     if ast.generics.lt_token.is_some() {
         abort_call_site!(
             "Model can only be derived for concrete types.";

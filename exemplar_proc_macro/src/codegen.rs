@@ -198,14 +198,14 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
     let func = format_ident!("{}_exemplar_check", func);
 
     let table = &derivee.table;
-    let columns = derivee.col_names();
+    let fields = derivee.col_names();
     
     quote! {
-        // Hack to prevent clippy::items_after_test_module from firing
-        #[cfg(not(not(test)))]
+        #[cfg(test)]
         #[automatically_derived]
         #[test]
         fn #func() {
+            use ::std::collections::HashSet;
             use ::rusqlite::Connection;
 
             let schema = include_str!(#path);
@@ -216,19 +216,26 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
             conn.execute_batch(schema)
                 .expect("Failed to apply provided schema to check DB.");
 
-            let mut names = String::new();
+            let mut columns = HashSet::new();
 
             conn.pragma(None, "table_info", #table, |row| {
                 let name = row.get::<_, String>("name")
                     .expect("Failed to get name for table row.");
 
-                names += &name;
-                names += "\n";
+                columns.insert(name);
 
                 Ok(())
             }).expect("Failed to query table_info pragma.");
+            
+            let fields = vec![#(#fields),*];
 
-            #(assert!(names.contains(#columns)));*
+            for field in &fields {
+                assert!(columns.contains(field as &str), "A field in the model ({field}) has no corresponding column in the schema.");
+            }
+
+            for column in columns.iter().map(String::as_str) {
+                assert!(fields.contains(&column), "A column in the schema ({column}) has no corresponding field in the model.");
+            }
         }
     }
 }
