@@ -95,9 +95,7 @@ pub fn get_check_path(ast: &DeriveInput) -> Option<String> {
             attr.path().is_ident("check")
         });
 
-    let Some(table) = table else {
-        return None;
-    };
+    let table = table?;
 
     let Ok(Lit::Str(str)) = table.parse_args::<Lit>() else {
         abort!(
@@ -148,9 +146,7 @@ pub fn get_bind_path(field: &Field) -> Option<Path> {
             attr.path().is_ident("bind")
         });
 
-    let Some(bind) = bind else {
-        return None;
-    };
+    let bind = bind?;
 
     let Ok(path) = bind.parse_args::<Path>() else {
         abort!(
@@ -172,9 +168,7 @@ pub fn get_extr_path(field: &Field) -> Option<ExprPath> {
             attr.path().is_ident("extr")
         });
 
-    let Some(extr) = extr else {
-        return None;
-    };
+    let extr = extr?;
 
     let Ok(path) = extr.parse_args::<ExprPath>() else {
         abort!(

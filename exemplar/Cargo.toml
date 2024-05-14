@@ -16,14 +16,13 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
 exemplar_proc_macro = { version = "0.7.1" }
-rusqlite = "0.30.0"
+rusqlite = "0.31.0"
 
 [dev-dependencies]
 anyhow = "1.0.75"
 criterion = "0.5.1"
 serde = "1.0.189"
-# Temporarily disabled; uses outdated rusqlite version.
-# serde_rusqlite = "0.33.1"
+serde_rusqlite = "0.35.0"
 
 [[bench]]
 name = "binding_strategies"
@@ -33,10 +32,9 @@ harness = false
 name = "query_exemplar"
 harness = false
 
-# Temporarily disabled; see above.
-# [[bench]]
-# name = "query_serde"
-# harness = false
+[[bench]]
+name = "query_serde"
+harness = false
 
 [[bench]]
 name = "query_manual"
