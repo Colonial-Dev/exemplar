@@ -194,9 +194,9 @@ pub trait Model {
     /// This method serves two purposes:
     /// - Enabling insertions into secondary tables (such as in-memory caches.)
     /// - Squeezing out a few hundred extra nanoseconds of performance on insert operations. [`insert`](Model::insert)
-    /// and [`insert_or`](Model::insert_or) use [`prepare_cached`](https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.prepare_cached)
-    /// to make the API convenient, but this incurs a map lookup on every call. [`insert_with`](Model::insert_with) can therefore
-    /// help you squeeze out a bit more speed if your program is extremely write-heavy.
+    ///   and [`insert_or`](Model::insert_or) use [`prepare_cached`](https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.prepare_cached)
+    ///   to make the API convenient, but this incurs a map lookup on every call. [`insert_with`](Model::insert_with) can therefore
+    ///   help you squeeze out a bit more speed if your program is extremely write-heavy.
     /// 
     /// # Usage
     /// Exemplar binds fields to statements as *named parameters.* Take this example model type:

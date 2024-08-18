@@ -1,4 +1,4 @@
-use criterion::*;
+/*use criterion::*;
 
 use serde::{Serialize, Deserialize};
 use serde_rusqlite::*;
@@ -63,4 +63,4 @@ fn criterion_benchmark(c: &mut Criterion) {
 }
 
 criterion_group!(benches, criterion_benchmark);
-criterion_main!(benches);
+criterion_main!(benches);*/
