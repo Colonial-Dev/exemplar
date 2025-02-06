@@ -322,7 +322,7 @@ pub enum Parameter<'a> {
     Boxed(Box<dyn ToSql + 'a>)
 }
 
-impl<'a> ToSql for Parameter<'a> {
+impl ToSql for Parameter<'_> {
     fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
         match self {
             Self::Borrowed(param) => param.to_sql(),

@@ -7,7 +7,7 @@ pub struct Derivee<'a> {
     pub schema: Option<String>,
 }
 
-impl<'a> Derivee<'a> {
+impl Derivee<'_> {
     pub fn field_idents(&self) -> impl Iterator<Item = &Ident> {
         self
             .fields

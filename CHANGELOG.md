@@ -1,3 +1,8 @@
+### v0.33.0
+- (Routine Maintenance) Updated `rusqlite` from `0.32` to `0.33`.
+  - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
+- The version number for Exemplar now matches the supported `rusqlite` version.
+
 ### v0.11.0
 - (Routine Maintenance) Updated `rusqlite` from `0.31` to `0.32`.
   - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
