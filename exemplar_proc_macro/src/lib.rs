@@ -2,7 +2,7 @@ mod codegen;
 mod util;
 
 use proc_macro::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error2::*;
 
 use proc_macro2::Ident;
 use proc_macro2::Literal;
@@ -59,7 +59,7 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
         )
     }
 
-    let table = util::get_table_name(&ast);
+    let table  = util::get_table_name(&ast);
     let schema = util::get_check_path(&ast);
 
     let derivee = Derivee {
@@ -69,11 +69,11 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
         schema
     };
 
-    let from_row            = codegen::from_row(&derivee);
-    let inserts             = codegen::inserts(&derivee);
-    let to_params           = codegen::to_params(&derivee);
-    let metadata            = codegen::metadata(&derivee);
-    let check_test          = codegen::check_test(&derivee);
+    let from_row   = codegen::from_row(&derivee);
+    let inserts    = codegen::inserts(&derivee);
+    let to_params  = codegen::to_params(&derivee);
+    let metadata   = codegen::metadata(&derivee);
+    let check_test = codegen::check_test(&derivee);
     
     quote! {
         #[automatically_derived]
@@ -85,10 +85,10 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
         }
 
         #[automatically_derived]
-        impl<'a> ::std::convert::TryFrom<&'a ::rusqlite::Row<'_>> for #name {
-            type Error = ::rusqlite::Error;
+        impl<'a> ::std::convert::TryFrom<&'a ::exemplar::rusqlite::Row<'_>> for #name {
+            type Error = ::exemplar::rusqlite::Error;
 
-            fn try_from(value: &'a ::rusqlite::Row) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a ::exemplar::rusqlite::Row) -> Result<Self, Self::Error> {
                 Self::from_row(value)
             }
         }
