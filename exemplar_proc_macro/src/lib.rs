@@ -85,10 +85,10 @@ pub fn derive_model(input: TokenStream) -> TokenStream {
         }
 
         #[automatically_derived]
-        impl<'a> ::std::convert::TryFrom<&'a ::exemplar::rusqlite::Row<'_>> for #name {
-            type Error = ::exemplar::rusqlite::Error;
+        impl<'a> ::std::convert::TryFrom<&'a ::rusqlite::Row<'_>> for #name {
+            type Error = ::rusqlite::Error;
 
-            fn try_from(value: &'a ::exemplar::rusqlite::Row) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a ::rusqlite::Row) -> Result<Self, Self::Error> {
                 Self::from_row(value)
             }
         }

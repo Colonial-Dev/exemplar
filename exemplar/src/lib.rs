@@ -96,11 +96,6 @@ use rusqlite::types::{
     FromSqlResult
 };
 
-// We re-export rusqlite to maximize macro compatibility.
-// (See https://github.com/Colonial-Dev/exemplar/issues/5)
-#[doc(hidden)]
-pub use rusqlite;
-
 pub use crate::macros::*;
 
 /// Type alias for the outcome of converting a value to an SQL-friendly representation.

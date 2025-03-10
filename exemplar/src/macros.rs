@@ -214,17 +214,17 @@ macro_rules! record {
         }
         
         impl $name {
-            fn from_row(row: &::exemplar::rusqlite::Row) -> ::exemplar::rusqlite::Result<Self> {
+            fn from_row(row: &::rusqlite::Row) -> ::rusqlite::Result<Self> {
                 Ok(Self {
                     $($fname : row.get(stringify!($fname))?),*
                 })
             }
         }
 
-        impl<'a> ::std::convert::TryFrom<&'a ::exemplar::rusqlite::Row<'_>> for $name {
-            type Error = ::exemplar::rusqlite::Error;
+        impl<'a> ::std::convert::TryFrom<&'a ::rusqlite::Row<'_>> for $name {
+            type Error = ::rusqlite::Error;
 
-            fn try_from(value: &'a ::exemplar::rusqlite::Row) -> Result<Self, Self::Error> {
+            fn try_from(value: &'a ::rusqlite::Row) -> Result<Self, Self::Error> {
                 Self::from_row(value)
             }
         }
@@ -313,28 +313,28 @@ macro_rules! sql_enum {
         }
 
         #[automatically_derived]
-        impl ::exemplar::rusqlite::ToSql for $name {
-            fn to_sql(&self) -> ::exemplar::rusqlite::Result<::exemplar::rusqlite::types::ToSqlOutput<'_>> {
-                let value = ::exemplar::rusqlite::types::Value::Integer(*self as i64);
-                let value = ::exemplar::rusqlite::types::ToSqlOutput::Owned(value);
+        impl ::rusqlite::ToSql for $name {
+            fn to_sql(&self) -> ::rusqlite::Result<::rusqlite::types::ToSqlOutput<'_>> {
+                let value = ::rusqlite::types::Value::Integer(*self as i64);
+                let value = ::rusqlite::types::ToSqlOutput::Owned(value);
                 Ok(value)
             }
         }
 
         #[automatically_derived]
-        impl ::exemplar::rusqlite::types::FromSql for $name {
-            fn column_result(value: ::exemplar::rusqlite::types::ValueRef<'_>) -> ::exemplar::rusqlite::types::FromSqlResult<Self> {
+        impl ::rusqlite::types::FromSql for $name {
+            fn column_result(value: ::rusqlite::types::ValueRef<'_>) -> ::rusqlite::types::FromSqlResult<Self> {
                 value.as_i64()
                     .map(<$name>::try_from)?
                     .map_err(|err| {
-                        ::exemplar::rusqlite::types::FromSqlError::Other(Box::new(err))
+                        ::rusqlite::types::FromSqlError::Other(Box::new(err))
                     })
             }
         }
 
         #[automatically_derived]
         impl ::std::convert::TryFrom<i64> for $name {
-            type Error = ::exemplar::rusqlite::types::FromSqlError;
+            type Error = ::rusqlite::types::FromSqlError;
 
             fn try_from(value: i64) -> Result<Self, Self::Error> {
                 match value {
@@ -345,7 +345,7 @@ macro_rules! sql_enum {
                             stringify!($name)
                         );
     
-                        Err(::exemplar::rusqlite::types::FromSqlError::Other(
+                        Err(::rusqlite::types::FromSqlError::Other(
                             msg.into()
                         ))
                     }

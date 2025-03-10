@@ -22,7 +22,7 @@ pub fn from_row(derivee: &Derivee) -> QuoteStream {
 
     quote! {
         #[inline]
-        fn from_row(row: &::exemplar::rusqlite::Row) -> ::exemplar::rusqlite::Result<Self> 
+        fn from_row(row: &::rusqlite::Row) -> ::rusqlite::Result<Self> 
         where
             Self: ::std::marker::Sized,
         {
@@ -64,15 +64,15 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
 
     quote! {
         #[inline]
-        fn insert(&self, conn: &::exemplar::rusqlite::Connection) -> ::exemplar::rusqlite::Result<()> {
+        fn insert(&self, conn: &::rusqlite::Connection) -> ::rusqlite::Result<()> {
             self.insert_or(conn, ::exemplar::OnConflict::Abort)
         }
 
         #[inline]
-        fn insert_or(&self, conn: &::exemplar::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::exemplar::rusqlite::Result<()> {
+        fn insert_or(&self, conn: &::rusqlite::Connection, strategy: ::exemplar::OnConflict) -> ::rusqlite::Result<()> {
             use ::exemplar::OnConflict::*;
             
-            let exec = |sql: &str| -> ::exemplar::rusqlite::Result<()> {
+            let exec = |sql: &str| -> ::rusqlite::Result<()> {
                 let mut stmt = conn.prepare_cached(sql)?;
 
                 stmt.execute(rusqlite::named_params! {
@@ -92,7 +92,7 @@ pub fn inserts(derivee: &Derivee) -> QuoteStream {
         }
 
         #[inline]
-        fn insert_with(&self, stmt: &mut::exemplar::rusqlite::Statement) -> ::exemplar::rusqlite::Result<()> {
+        fn insert_with(&self, stmt: &mut::rusqlite::Statement) -> ::rusqlite::Result<()> {
             stmt.execute(rusqlite::named_params! {
                 #(#col_names: #field_idents),*
             })?;
@@ -116,17 +116,17 @@ pub fn to_params(derivee: &Derivee) -> QuoteStream {
         .map(|(ident, field)| {
             if let Some(bind) = util::get_bind_path(field) {
                 // If the field has a #[bind] attribute, then we execute it now and box the result.
-                quote! { Boxed(Box::new(#bind(&self.#ident)?) as Box<dyn ::exemplar::rusqlite::ToSql>) }
+                quote! { Boxed(Box::new(#bind(&self.#ident)?) as Box<dyn ::rusqlite::ToSql>) }
             }
             else {
                 // Otherwise, we're good to just borrow directly from self and cast to a dyn ToSql.
-                quote! { Borrowed(&self.#ident as &dyn ::exemplar::rusqlite::ToSql) }
+                quote! { Borrowed(&self.#ident as &dyn ::rusqlite::ToSql) }
             }
         });
     
     quote! {
         #[inline]
-        fn to_params(&self) -> ::exemplar::rusqlite::Result<::exemplar::Parameters> {
+        fn to_params(&self) -> ::rusqlite::Result<::exemplar::Parameters> {
             use ::std::boxed::Box;
             use ::exemplar::Parameter::*;
 
@@ -206,7 +206,7 @@ pub fn check_test(derivee: &Derivee) -> QuoteStream {
         #[test]
         fn #func() {
             use ::std::collections::HashSet;
-            use ::exemplar::rusqlite::Connection;
+            use ::rusqlite::Connection;
 
             let schema = include_str!(#path);
 
