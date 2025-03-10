@@ -2,7 +2,7 @@ mod codegen;
 mod util;
 
 use proc_macro::TokenStream;
-use proc_macro_error::*;
+use proc_macro_error2::*;
 
 use proc_macro2::Ident;
 use proc_macro2::Literal;
