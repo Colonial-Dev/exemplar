@@ -1,4 +1,11 @@
 ### v0.33.0
+- (Routine Maintenance) Updated `rusqlite` from `0.33` to `0.34`.
+  - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
+- Fixed issue with macros failing if Rusqlite is not linked to the current crate.
+- Replaced unmaintained dependency `proc_macro_error`.
+
+
+### v0.33.0
 - (Routine Maintenance) Updated `rusqlite` from `0.32` to `0.33`.
   - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
 - The version number for Exemplar now matches the supported `rusqlite` version.
