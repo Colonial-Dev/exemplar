@@ -253,7 +253,7 @@ pub trait Model {
     /// This method allocates at least once, in order to [`Box`] the returned slice.
     /// 
     /// If the implementing type has any fields annotated with `#[bind]`, an additional boxing will be incurred for each annotated field.
-    fn to_params(&self) -> Result<Parameters>;
+    fn to_params(&self) -> Result<Parameters<'_>>;
 
     /// Static dispatch version of [`Model::metadata_dyn`].
     fn metadata() -> ModelMeta
