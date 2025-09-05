@@ -1,3 +1,7 @@
+### v0.37.0
+- (Routine Maintenance) Updated `rusqlite` from `0.36` to `0.37`.
+  - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
+
 ### v0.36.0
 - (Routine Maintenance) Updated `rusqlite` from `0.35` to `0.36`.
   - This is a *breaking change,* requiring you to upgrade your `rusqlite` to match - trying to link against two different copies of `libsqlite3` will cause a compile fail.
